@@ -1,103 +1,123 @@
-import Image from "next/image";
+"use client"
 
-export default function Home() {
+import { useAuth } from "@/hooks/use-auth"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Heart, Shield, Users, Zap } from "lucide-react"
+
+export default function HomePage() {
+  const { user, userProfile, signInWithGoogle, loading } = useAuth()
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
+
+  if (user && userProfile?.role) {
+    // Redirect to appropriate dashboard
+    window.location.href = userProfile.role === "doctor" ? "/doctor/dashboard" : "/patient/dashboard"
+    return null
+  }
+
+  if (user && !userProfile?.role) {
+    // Redirect to role selection
+    window.location.href = "/auth/role-selection"
+    return null
+  }
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted">
+      {/* Header */}
+      <header className="border-b bg-card/50 backdrop-blur-sm">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Heart className="h-8 w-8 text-primary" />
+            <h1 className="text-2xl font-bold text-foreground">HealthSync</h1>
+          </div>
+          <Button onClick={signInWithGoogle} size="lg">
+            Sign In with Google
+          </Button>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+      </header>
+
+      {/* Hero Section */}
+      <section className="container mx-auto px-4 py-20 text-center">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-5xl font-bold text-foreground mb-6 text-balance">
+            Unified Healthcare Records for Everyone
+          </h2>
+          <p className="text-xl text-muted-foreground mb-8 text-pretty">
+            AI-powered healthcare data management system that connects doctors, patients, and government health records
+            in one secure platform.
+          </p>
+          <Button onClick={signInWithGoogle} size="lg" className="text-lg px-8 py-3">
+            Get Started Today
+          </Button>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="container mx-auto px-4 py-16">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card className="text-center">
+            <CardHeader>
+              <Zap className="h-12 w-12 text-primary mx-auto mb-4" />
+              <CardTitle>Voice Prescriptions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CardDescription>
+                Doctors dictate prescriptions, AI transcribes and generates digital records instantly.
+              </CardDescription>
+            </CardContent>
+          </Card>
+
+          <Card className="text-center">
+            <CardHeader>
+              <Shield className="h-12 w-12 text-primary mx-auto mb-4" />
+              <CardTitle>OCR Digitization</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CardDescription>
+                Upload old prescriptions and medical records - our AI digitizes and stores them securely.
+              </CardDescription>
+            </CardContent>
+          </Card>
+
+          <Card className="text-center">
+            <CardHeader>
+              <Users className="h-12 w-12 text-primary mx-auto mb-4" />
+              <CardTitle>ABDM Integration</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CardDescription>
+                Seamlessly connect with government health records through ABDM integration.
+              </CardDescription>
+            </CardContent>
+          </Card>
+
+          <Card className="text-center">
+            <CardHeader>
+              <Heart className="h-12 w-12 text-primary mx-auto mb-4" />
+              <CardTitle>Unified Records</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CardDescription>
+                All your health data from hospitals, labs, and uploads in one secure location.
+              </CardDescription>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t bg-card/50 backdrop-blur-sm mt-20">
+        <div className="container mx-auto px-4 py-8 text-center">
+          <p className="text-muted-foreground">© 2024 HealthSync. Secure, AI-powered healthcare data management.</p>
+        </div>
       </footer>
     </div>
-  );
+  )
 }
