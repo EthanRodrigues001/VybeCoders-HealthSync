@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { X, Download, Calendar, User, MapPin, Phone, Activity, Weight, Heart } from "lucide-react"
+import { X, Download, Calendar, User, MapPin, Phone, Stethoscope, AlertCircle } from "lucide-react"
+import { downloadPrescriptionPDF } from "@/lib/generate-prescription-pdf"
+import { useAuth } from "@/hooks/use-auth"
 
 interface PrescriptionDetailProps {
   prescription: any
@@ -12,9 +14,51 @@ interface PrescriptionDetailProps {
 }
 
 export function PrescriptionDetail({ prescription, onClose }: PrescriptionDetailProps) {
+  const { userProfile } = useAuth()
+
+  console.log("[v0] Prescription data:", prescription)
+  console.log("[v0] Extracted data:", prescription.extractedData)
+  console.log("[v0] Symptoms:", prescription.extractedData?.symptoms)
+  console.log("[v0] Diagnoses:", prescription.extractedData?.diagnoses)
+  console.log("[v0] Medications:", prescription.extractedData?.medications)
+
   const handleDownload = () => {
-    if (prescription.imageUrl) {
-      window.open(prescription.imageUrl, "_blank")
+    try {
+      const prescriptionData = {
+        symptoms: prescription.symptoms || prescription.extractedData?.symptoms || [],
+        diagnoses: prescription.diagnoses || prescription.extractedData?.diagnoses || [],
+        medications:
+          prescription.medications ||
+          prescription.extractedData?.medications ||
+          prescription.extractedData?.prescriptions ||
+          [],
+      }
+
+      console.log("[v0] PDF prescription data:", prescriptionData)
+
+      const doctorInfo = {
+        name: prescription.doctorName || prescription.extractedData?.doctorInfo?.name || "Unknown Doctor",
+        clinicAddress:
+          prescription.extractedData?.doctorInfo?.clinic || prescription.extractedData?.doctorInfo?.address || "",
+        phone: prescription.extractedData?.doctorInfo?.phone || "",
+        license: prescription.extractedData?.doctorInfo?.license || "",
+      }
+
+      const patientInfo = {
+        name: userProfile?.displayName || "Patient",
+        age: userProfile?.age || "",
+        gender: userProfile?.gender || "",
+        phone: userProfile?.phone || "",
+        address: userProfile?.address || "",
+      }
+
+      downloadPrescriptionPDF(prescriptionData, doctorInfo, patientInfo)
+    } catch (error) {
+      console.error("Error generating PDF:", error)
+      // Fallback to original image if PDF generation fails
+      if (prescription.imageUrl) {
+        window.open(prescription.imageUrl, "_blank")
+      }
     }
   }
 
@@ -41,6 +85,19 @@ export function PrescriptionDetail({ prescription, onClose }: PrescriptionDetail
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
+          <Card className="border-yellow-200 bg-yellow-50">
+            <CardHeader>
+              <CardTitle className="text-sm text-yellow-800">Debug Info (temporary)</CardTitle>
+            </CardHeader>
+            <CardContent className="text-xs text-yellow-700">
+              <p>Has extractedData: {prescription.extractedData ? "Yes" : "No"}</p>
+              <p>Symptoms count: {prescription.extractedData?.symptoms?.length || 0}</p>
+              <p>Diagnoses count: {prescription.extractedData?.diagnoses?.length || 0}</p>
+              <p>Medications count: {prescription.extractedData?.medications?.length || 0}</p>
+              <p>Prescriptions count: {prescription.extractedData?.prescriptions?.length || 0}</p>
+            </CardContent>
+          </Card>
+
           {/* Doctor Information */}
           {prescription.extractedData?.doctorInfo && (
             <Card>
@@ -81,87 +138,79 @@ export function PrescriptionDetail({ prescription, onClose }: PrescriptionDetail
             </Card>
           )}
 
-          {prescription.extractedData?.doctorInfo && prescription.extractedData?.patientVitals && <Separator />}
+          {/* Symptoms */}
+          {((prescription.symptoms && prescription.symptoms.length > 0) ||
+            (prescription.extractedData?.symptoms && prescription.extractedData.symptoms.length > 0)) && (
+              <>
+                <Separator />
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <AlertCircle className="h-5 w-5" />
+                      Symptoms
+                    </CardTitle>
+                    <CardDescription>Patient reported symptoms</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {(prescription.symptoms || prescription.extractedData?.symptoms || []).map(
+                        (symptom: any, index: number) => (
+                          <div key={index} className="flex items-center gap-2">
+                            <div className="h-2 w-2 bg-orange-500 rounded-full" />
+                            <span className="text-sm">
+                              {typeof symptom === "string"
+                                ? symptom
+                                : symptom.text || symptom.name || JSON.stringify(symptom)}
+                            </span>
+                            {typeof symptom === "object" && symptom.severity && (
+                              <Badge variant="outline" className="text-xs">
+                                {symptom.severity}
+                              </Badge>
+                            )}
+                          </div>
+                        ),
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </>
+            )}
 
-          {/* Patient Vitals */}
-          {prescription.extractedData?.patientVitals && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Activity className="h-5 w-5" />
-                  Patient Vitals
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {prescription.extractedData.patientVitals.weight && (
-                    <div className="flex items-center gap-2">
-                      <Weight className="h-4 w-4 text-muted-foreground" />
-                      <div>
-                        <p className="text-sm font-medium">Weight</p>
-                        <p className="text-sm text-muted-foreground">
-                          {prescription.extractedData.patientVitals.weight}
-                        </p>
-                      </div>
+          {/* Diagnoses */}
+          {((prescription.diagnoses && prescription.diagnoses.length > 0) ||
+            (prescription.extractedData?.diagnoses && prescription.extractedData.diagnoses.length > 0)) && (
+              <>
+                <Separator />
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Stethoscope className="h-5 w-5" />
+                      Diagnoses
+                    </CardTitle>
+                    <CardDescription>Medical diagnoses and conditions</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {(prescription.diagnoses || prescription.extractedData?.diagnoses || []).map(
+                        (diagnosis: any, index: number) => (
+                          <div key={index} className="flex items-center gap-2">
+                            <div className="h-2 w-2 bg-blue-500 rounded-full" />
+                            <span className="text-sm font-medium">
+                              {typeof diagnosis === "string"
+                                ? diagnosis
+                                : diagnosis.text || diagnosis.name || JSON.stringify(diagnosis)}
+                            </span>
+                            {typeof diagnosis === "object" && diagnosis.notes && (
+                              <span className="text-xs text-muted-foreground">- {diagnosis.notes}</span>
+                            )}
+                          </div>
+                        ),
+                      )}
                     </div>
-                  )}
-                  {prescription.extractedData.patientVitals.bloodPressure && (
-                    <div className="flex items-center gap-2">
-                      <Heart className="h-4 w-4 text-muted-foreground" />
-                      <div>
-                        <p className="text-sm font-medium">Blood Pressure</p>
-                        <p className="text-sm text-muted-foreground">
-                          {prescription.extractedData.patientVitals.bloodPressure}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                  {prescription.extractedData.patientVitals.temperature && (
-                    <div className="flex items-center gap-2">
-                      <Activity className="h-4 w-4 text-muted-foreground" />
-                      <div>
-                        <p className="text-sm font-medium">Temperature</p>
-                        <p className="text-sm text-muted-foreground">
-                          {prescription.extractedData.patientVitals.temperature}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                  {prescription.extractedData.patientVitals.pulse && (
-                    <div className="flex items-center gap-2">
-                      <Heart className="h-4 w-4 text-muted-foreground" />
-                      <div>
-                        <p className="text-sm font-medium">Pulse</p>
-                        <p className="text-sm text-muted-foreground">
-                          {prescription.extractedData.patientVitals.pulse}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                  {prescription.extractedData.patientVitals.height && (
-                    <div className="flex items-center gap-2">
-                      <Activity className="h-4 w-4 text-muted-foreground" />
-                      <div>
-                        <p className="text-sm font-medium">Height</p>
-                        <p className="text-sm text-muted-foreground">
-                          {prescription.extractedData.patientVitals.height}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                  {prescription.extractedData.patientVitals.bmi && (
-                    <div className="flex items-center gap-2">
-                      <Activity className="h-4 w-4 text-muted-foreground" />
-                      <div>
-                        <p className="text-sm font-medium">BMI</p>
-                        <p className="text-sm text-muted-foreground">{prescription.extractedData.patientVitals.bmi}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                  </CardContent>
+                </Card>
+              </>
+            )}
 
           {/* Prescription Date */}
           {prescription.extractedData?.date && (
@@ -175,52 +224,144 @@ export function PrescriptionDetail({ prescription, onClose }: PrescriptionDetail
           )}
 
           {/* Medications */}
-          {prescription.extractedData?.prescriptions && prescription.extractedData.prescriptions.length > 0 && (
-            <>
-              <Separator />
-              <Card>
-                <CardHeader>
-                  <CardTitle>Prescribed Medications</CardTitle>
-                  <CardDescription>
-                    {prescription.extractedData.prescriptions.length} medication(s) prescribed
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {prescription.extractedData.prescriptions.map((med: any, index: number) => (
-                      <div key={index} className="border rounded-lg p-4">
-                        <div className="flex items-start justify-between mb-3">
-                          <h4 className="font-semibold text-lg">{med.medication}</h4>
-                          {med.dosage && <Badge variant="secondary">{med.dosage}</Badge>}
-                        </div>
-
-                        {med.timings && med.timings.length > 0 && (
-                          <div className="mb-2">
-                            <p className="text-sm font-medium mb-1">Timing:</p>
-                            <div className="flex flex-wrap gap-1">
-                              {med.timings.map((timing: string, timingIndex: number) => (
-                                <Badge key={timingIndex} variant="outline" className="text-xs">
-                                  {timing}
-                                </Badge>
-                              ))}
+          {((prescription.medications && prescription.medications.length > 0) ||
+            (prescription.extractedData?.medications && prescription.extractedData.medications.length > 0) ||
+            (prescription.extractedData?.prescriptions && prescription.extractedData.prescriptions.length > 0)) && (
+              <>
+                <Separator />
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Stethoscope className="h-5 w-5" />
+                      Prescribed Medications
+                    </CardTitle>
+                    <CardDescription>
+                      {prescription.medications?.length ||
+                        prescription.extractedData?.medications?.length ||
+                        prescription.extractedData?.prescriptions?.length ||
+                        0}{" "}
+                      medication(s) prescribed
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {/* Voice prescription medications */}
+                      {prescription.medications &&
+                        prescription.medications.map((med: any, index: number) => (
+                          <div key={index} className="border rounded-lg p-4 bg-muted/30">
+                            <div className="flex items-start justify-between mb-3">
+                              <h4 className="font-semibold text-lg text-primary">{med.name}</h4>
+                              {med.dose && <Badge variant="secondary">{med.dose}</Badge>}
                             </div>
-                          </div>
-                        )}
 
-                        {med.duration && (
-                          <div>
-                            <p className="text-sm font-medium">
-                              Duration: <span className="font-normal">{med.duration}</span>
-                            </p>
+                            {med.timing && (
+                              <div className="mb-2">
+                                <p className="text-sm font-medium mb-1">Timing:</p>
+                                <Badge variant="outline" className="text-xs">
+                                  {med.timing}
+                                </Badge>
+                              </div>
+                            )}
+
+                            {med.duration_days && (
+                              <div className="mb-2">
+                                <p className="text-sm font-medium">
+                                  Duration: <span className="font-normal">{med.duration_days} days</span>
+                                </p>
+                              </div>
+                            )}
+
+                            {med.instructions && (
+                              <div>
+                                <p className="text-sm font-medium mb-1">Instructions:</p>
+                                <p className="text-sm text-muted-foreground">{med.instructions}</p>
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </>
-          )}
+                        ))}
+
+                      {/* API medications from extractedData.medications */}
+                      {prescription.extractedData?.medications &&
+                        prescription.extractedData.medications.map((med: any, index: number) => (
+                          <div key={index} className="border rounded-lg p-4 bg-muted/30">
+                            <div className="flex items-start justify-between mb-3">
+                              <h4 className="font-semibold text-lg text-primary">{med.name || med.medication}</h4>
+                              {(med.dose || med.dosage) && <Badge variant="secondary">{med.dose || med.dosage}</Badge>}
+                            </div>
+
+                            {(med.timing || (med.timings && med.timings.length > 0)) && (
+                              <div className="mb-2">
+                                <p className="text-sm font-medium mb-1">Timing:</p>
+                                {med.timing ? (
+                                  <Badge variant="outline" className="text-xs">
+                                    {med.timing}
+                                  </Badge>
+                                ) : (
+                                  <div className="flex flex-wrap gap-1">
+                                    {med.timings.map((timing: string, timingIndex: number) => (
+                                      <Badge key={timingIndex} variant="outline" className="text-xs">
+                                        {timing}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {(med.duration_days || med.duration) && (
+                              <div className="mb-2">
+                                <p className="text-sm font-medium">
+                                  Duration: <span className="font-normal">{med.duration_days || med.duration}</span>
+                                </p>
+                              </div>
+                            )}
+
+                            {med.instructions && (
+                              <div>
+                                <p className="text-sm font-medium mb-1">Instructions:</p>
+                                <p className="text-sm text-muted-foreground">{med.instructions}</p>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+
+                      {/* OCR prescription medications (fallback) */}
+                      {prescription.extractedData?.prescriptions &&
+                        !prescription.extractedData?.medications &&
+                        prescription.extractedData.prescriptions.map((med: any, index: number) => (
+                          <div key={index} className="border rounded-lg p-4 bg-muted/30">
+                            <div className="flex items-start justify-between mb-3">
+                              <h4 className="font-semibold text-lg text-primary">{med.medication}</h4>
+                              {med.dosage && <Badge variant="secondary">{med.dosage}</Badge>}
+                            </div>
+
+                            {med.timings && med.timings.length > 0 && (
+                              <div className="mb-2">
+                                <p className="text-sm font-medium mb-1">Timing:</p>
+                                <div className="flex flex-wrap gap-1">
+                                  {med.timings.map((timing: string, timingIndex: number) => (
+                                    <Badge key={timingIndex} variant="outline" className="text-xs">
+                                      {timing}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {med.duration && (
+                              <div>
+                                <p className="text-sm font-medium">
+                                  Duration: <span className="font-normal">{med.duration}</span>
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </>
+            )}
 
           {/* Additional Notes */}
           {prescription.extractedData?.notes && (

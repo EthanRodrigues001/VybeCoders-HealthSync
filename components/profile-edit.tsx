@@ -1,55 +1,25 @@
-"use client";
+"use client"
 
-import type React from "react";
+import type React from "react"
 
-import { useState } from "react";
-import { useAuth } from "@/hooks/use-auth";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { toast } from "sonner";
-import { User, Save, X } from "lucide-react";
+import { useState } from "react"
+import { useAuth } from "@/hooks/use-auth"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { toast } from "sonner"
+import { User, Save, X } from "lucide-react"
 
 interface ProfileEditProps {
-  onClose: () => void;
-}
-export interface UserProfile {
-  displayName?: string;
-  phone?: string;
-  gender?: string;
-  dateOfBirth?: string;
-  address?: string;
-  emergencyContact?: string;
-  specialization?: string;
-  licenseNumber?: string;
-  clinicName?: string;
-  clinicAddress?: string;
-  experience?: string;
-  role?: string;
+  onClose: () => void
 }
 
 export function ProfileEdit({ onClose }: ProfileEditProps) {
-  // ...existing code...
-  const { userProfile, updateUserProfile } = useAuth() as {
-    userProfile: UserProfile | null;
-    updateUserProfile: (profile: UserProfile) => Promise<void>;
-  };
-  const [loading, setLoading] = useState(false);
+  const { userProfile, updateUserProfile } = useAuth()
+  const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     displayName: userProfile?.displayName || "",
     phone: userProfile?.phone || "",
@@ -63,30 +33,30 @@ export function ProfileEdit({ onClose }: ProfileEditProps) {
     clinicName: userProfile?.clinicName || "",
     clinicAddress: userProfile?.clinicAddress || "",
     experience: userProfile?.experience || "",
-  });
+  })
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+    e.preventDefault()
+    setLoading(true)
 
     try {
-      await updateUserProfile(formData);
-      toast("Success", {
+      await updateUserProfile(formData)
+      toast("Profile updated successfully", {
         description: "Your profile has been successfully updated.",
-      });
-      onClose();
+      })
+      onClose()
     } catch (error) {
-      toast.error("Error", {
+      toast.error("Failed to update profile", {
         description: "Failed to update profile. Please try again.",
-      });
+      })
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
+    setFormData((prev) => ({ ...prev, [field]: value }))
+  }
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -115,9 +85,7 @@ export function ProfileEdit({ onClose }: ProfileEditProps) {
                   <Input
                     id="displayName"
                     value={formData.displayName}
-                    onChange={(e) =>
-                      handleInputChange("displayName", e.target.value)
-                    }
+                    onChange={(e) => handleInputChange("displayName", e.target.value)}
                     required
                   />
                 </div>
@@ -134,12 +102,7 @@ export function ProfileEdit({ onClose }: ProfileEditProps) {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="gender">Gender</Label>
-                  <Select
-                    value={formData.gender}
-                    onValueChange={(value) =>
-                      handleInputChange("gender", value)
-                    }
-                  >
+                  <Select value={formData.gender} onValueChange={(value) => handleInputChange("gender", value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select gender" />
                     </SelectTrigger>
@@ -147,9 +110,7 @@ export function ProfileEdit({ onClose }: ProfileEditProps) {
                       <SelectItem value="male">Male</SelectItem>
                       <SelectItem value="female">Female</SelectItem>
                       <SelectItem value="other">Other</SelectItem>
-                      <SelectItem value="prefer-not-to-say">
-                        Prefer not to say
-                      </SelectItem>
+                      <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -159,9 +120,7 @@ export function ProfileEdit({ onClose }: ProfileEditProps) {
                     id="dateOfBirth"
                     type="date"
                     value={formData.dateOfBirth}
-                    onChange={(e) =>
-                      handleInputChange("dateOfBirth", e.target.value)
-                    }
+                    onChange={(e) => handleInputChange("dateOfBirth", e.target.value)}
                   />
                 </div>
               </div>
@@ -181,9 +140,7 @@ export function ProfileEdit({ onClose }: ProfileEditProps) {
                 <Input
                   id="emergencyContact"
                   value={formData.emergencyContact}
-                  onChange={(e) =>
-                    handleInputChange("emergencyContact", e.target.value)
-                  }
+                  onChange={(e) => handleInputChange("emergencyContact", e.target.value)}
                   placeholder="Name and phone number"
                 />
               </div>
@@ -192,9 +149,7 @@ export function ProfileEdit({ onClose }: ProfileEditProps) {
             {/* Doctor-specific fields */}
             {userProfile?.role === "doctor" && (
               <div className="space-y-4 border-t pt-4">
-                <h3 className="text-lg font-semibold">
-                  Professional Information
-                </h3>
+                <h3 className="text-lg font-semibold">Professional Information</h3>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -202,9 +157,7 @@ export function ProfileEdit({ onClose }: ProfileEditProps) {
                     <Input
                       id="specialization"
                       value={formData.specialization}
-                      onChange={(e) =>
-                        handleInputChange("specialization", e.target.value)
-                      }
+                      onChange={(e) => handleInputChange("specialization", e.target.value)}
                     />
                   </div>
                   <div>
@@ -212,9 +165,7 @@ export function ProfileEdit({ onClose }: ProfileEditProps) {
                     <Input
                       id="licenseNumber"
                       value={formData.licenseNumber}
-                      onChange={(e) =>
-                        handleInputChange("licenseNumber", e.target.value)
-                      }
+                      onChange={(e) => handleInputChange("licenseNumber", e.target.value)}
                     />
                   </div>
                 </div>
@@ -225,9 +176,7 @@ export function ProfileEdit({ onClose }: ProfileEditProps) {
                     <Input
                       id="clinicName"
                       value={formData.clinicName}
-                      onChange={(e) =>
-                        handleInputChange("clinicName", e.target.value)
-                      }
+                      onChange={(e) => handleInputChange("clinicName", e.target.value)}
                     />
                   </div>
                   <div>
@@ -236,9 +185,7 @@ export function ProfileEdit({ onClose }: ProfileEditProps) {
                       id="experience"
                       type="number"
                       value={formData.experience}
-                      onChange={(e) =>
-                        handleInputChange("experience", e.target.value)
-                      }
+                      onChange={(e) => handleInputChange("experience", e.target.value)}
                     />
                   </div>
                 </div>
@@ -248,9 +195,7 @@ export function ProfileEdit({ onClose }: ProfileEditProps) {
                   <Textarea
                     id="clinicAddress"
                     value={formData.clinicAddress}
-                    onChange={(e) =>
-                      handleInputChange("clinicAddress", e.target.value)
-                    }
+                    onChange={(e) => handleInputChange("clinicAddress", e.target.value)}
                     rows={2}
                   />
                 </div>
@@ -270,5 +215,5 @@ export function ProfileEdit({ onClose }: ProfileEditProps) {
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }

@@ -14,10 +14,9 @@ export async function GET(request: NextRequest) {
 
     // Verify doctor has access to this patient
     const connectionQuery = query(
-      collection(db, "doctorPatientConnections"),
+      collection(db, "patientDoctors"),
       where("doctorId", "==", doctorId),
       where("patientId", "==", patientId),
-      where("status", "==", "approved"),
     )
 
     const connectionSnapshot = await getDocs(connectionQuery)
@@ -26,20 +25,39 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 })
     }
 
-    // Get patient's prescription records
-    const prescriptionsQuery = query(
+    const prescriptionsQuery1 = query(
+      collection(db, "prescriptions"),
+      where("patientId", "==", patientId),
+      orderBy("createdAt", "desc"),
+    )
+
+    const prescriptionsQuery2 = query(
       collection(db, "prescriptions"),
       where("userId", "==", patientId),
       orderBy("createdAt", "desc"),
     )
 
-    const prescriptionsSnapshot = await getDocs(prescriptionsQuery)
-    const prescriptions = prescriptionsSnapshot.docs.map((doc) => ({
+    const [prescriptionsSnapshot1, prescriptionsSnapshot2] = await Promise.all([
+      getDocs(prescriptionsQuery1),
+      getDocs(prescriptionsQuery2),
+    ])
+
+    const prescriptions1 = prescriptionsSnapshot1.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     }))
 
-    return NextResponse.json({ prescriptions })
+    const prescriptions2 = prescriptionsSnapshot2.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }))
+
+    const allPrescriptions = [...prescriptions1, ...prescriptions2]
+    const uniquePrescriptions = allPrescriptions.filter(
+      (prescription, index, self) => index === self.findIndex((p) => p.id === prescription.id),
+    )
+
+    return NextResponse.json({ prescriptions: uniquePrescriptions })
   } catch (error) {
     console.error("Error fetching patient records:", error)
     return NextResponse.json({ error: "Failed to fetch patient records" }, { status: 500 })

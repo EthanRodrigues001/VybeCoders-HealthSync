@@ -19,6 +19,7 @@ import { ProfileEdit } from "@/components/profile-edit"
 import { PrescriptionDetail } from "@/components/prescription-detail"
 import { DoctorSearch } from "@/components/doctor-search"
 import { Trash2 } from "lucide-react"
+import { downloadPrescriptionPDF } from "@/lib/generate-prescription-pdf"
 
 export function PatientDashboard() {
   const { userProfile, user, logout } = useAuth()
@@ -63,6 +64,49 @@ export function PatientDashboard() {
     }
   }
 
+  const getMedicationCount = (prescription: any) => {
+    if (prescription.extractedData?.prescriptions?.length) {
+      return prescription.extractedData.prescriptions.length
+    }
+    if (prescription.extractedData?.medications?.length) {
+      return prescription.extractedData.medications.length
+    }
+    if (prescription.medications?.length) {
+      return prescription.medications.length
+    }
+    return 0
+  }
+
+  const handleDownloadPDF = (prescription: any) => {
+    try {
+      const prescriptionData = {
+        symptoms: prescription.symptoms || [],
+        diagnoses: prescription.diagnoses || [],
+        medications: prescription.medications || prescription.extractedData?.prescriptions || [],
+      }
+
+      const doctorInfo = {
+        name: prescription.doctorName || prescription.extractedData?.doctorInfo?.name || "Unknown Doctor",
+        clinicAddress:
+          prescription.extractedData?.doctorInfo?.clinic || prescription.extractedData?.doctorInfo?.address || "",
+        phone: prescription.extractedData?.doctorInfo?.phone || "",
+        license: prescription.extractedData?.doctorInfo?.license || "",
+      }
+
+      const patientInfo = {
+        name: userProfile?.displayName || "Patient",
+        age: userProfile?.age || "",
+        gender: userProfile?.gender || "",
+        phone: userProfile?.phone || "",
+        address: userProfile?.address || "",
+      }
+
+      downloadPrescriptionPDF(prescriptionData, doctorInfo, patientInfo)
+    } catch (error) {
+      console.error("Error generating PDF:", error)
+    }
+  }
+
   const healthStats = {
     totalRecords: prescriptions.length,
     recentUploads: prescriptions.filter((p) => {
@@ -72,7 +116,7 @@ export function PatientDashboard() {
       return uploadDate > monthAgo
     }).length,
     upcomingAppointments: 2,
-    prescriptions: prescriptions.filter((p) => p.extractedData?.prescriptions?.length > 0).length,
+    prescriptions: prescriptions.filter((p) => getMedicationCount(p) > 0).length,
   }
 
   return (
@@ -257,7 +301,8 @@ export function PatientDashboard() {
                             </div>
                             <div className="flex items-center space-x-2">
                               <Badge variant="default">Active</Badge>
-                              <Button variant="ghost" size="sm" onClick={() => setSelectedPrescription(prescription)}>
+                              {/* Updated download button to use PDF generation */}
+                              <Button variant="ghost" size="sm" onClick={() => handleDownloadPDF(prescription)}>
                                 <Download className="h-4 w-4" />
                               </Button>
                               <Button variant="ghost" size="sm" onClick={() => deletePrescription(prescription.id)}>
@@ -307,29 +352,40 @@ export function PatientDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid gap-4 md:grid-cols-2">
-                    {[
-                      { id: 1, name: "Lisinopril", dosage: "10mg", frequency: "Once daily", prescribedBy: "Dr. Smith" },
-                      {
-                        id: 2,
-                        name: "Metformin",
-                        dosage: "500mg",
-                        frequency: "Twice daily",
-                        prescribedBy: "Dr. Johnson",
-                      },
-                    ].map((medication) => (
-                      <div key={medication.id} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div>
-                          <p className="text-sm font-medium">{medication.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {medication.dosage} • {medication.frequency}
-                          </p>
-                          <p className="text-xs text-muted-foreground">Prescribed by {medication.prescribedBy}</p>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Badge variant="outline">Active</Badge>
-                        </div>
-                      </div>
-                    ))}
+                    {prescriptions.filter((p) => getMedicationCount(p) > 0).length > 0 ? (
+                      prescriptions
+                        .filter((p) => getMedicationCount(p) > 0)
+                        .slice(0, 4)
+                        .flatMap((prescription) => {
+                          const medications =
+                            prescription.medications || prescription.extractedData?.prescriptions || []
+                          return medications.slice(0, 2).map((medication: any, index: number) => (
+                            <div
+                              key={`${prescription.id}-${index}`}
+                              className="flex items-center justify-between p-4 border rounded-lg"
+                            >
+                              <div>
+                                <p className="text-sm font-medium">{medication.name || medication.medication}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {medication.dose || medication.dosage} •{" "}
+                                  {medication.timing || medication.timings?.join(", ") || "As prescribed"}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  Prescribed by{" "}
+                                  {prescription.doctorName ||
+                                    prescription.extractedData?.doctorInfo?.name ||
+                                    "Unknown Doctor"}
+                                </p>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <Badge variant="outline">Active</Badge>
+                              </div>
+                            </div>
+                          ))
+                        })
+                    ) : (
+                      <p className="text-center text-muted-foreground col-span-2">No active medications found.</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -358,7 +414,8 @@ export function PatientDashboard() {
                             <div>
                               <p className="font-medium">Prescription Record</p>
                               <p className="text-sm text-muted-foreground">
-                                Doctor: {prescription.extractedData?.doctorInfo?.name || "Unknown"}
+                                Doctor:{" "}
+                                {prescription.doctorName || prescription.extractedData?.doctorInfo?.name || "Unknown"}
                               </p>
                               <p className="text-sm text-muted-foreground">
                                 Date:{" "}
@@ -367,14 +424,21 @@ export function PatientDashboard() {
                                     prescription.uploadedAt?.seconds * 1000 || prescription.createdAt,
                                   ).toLocaleDateString()}
                               </p>
-                              <p className="text-sm text-muted-foreground">
-                                Medications: {prescription.extractedData?.prescriptions?.length || 0}
-                              </p>
+                              {/* Removed medications count display and show actual medication info */}
+                              {getMedicationCount(prescription) > 0 && (
+                                <p className="text-sm text-muted-foreground">
+                                  {getMedicationCount(prescription)} medication(s) prescribed
+                                </p>
+                              )}
                             </div>
                           </div>
                           <div className="flex items-center space-x-2">
                             <Button variant="outline" size="sm" onClick={() => setSelectedPrescription(prescription)}>
                               View Details
+                            </Button>
+                            {/* Added PDF download button */}
+                            <Button variant="outline" size="sm" onClick={() => handleDownloadPDF(prescription)}>
+                              <Download className="h-4 w-4" />
                             </Button>
                             <Button variant="outline" size="sm" onClick={() => deletePrescription(prescription.id)}>
                               <Trash2 className="h-4 w-4 text-destructive" />

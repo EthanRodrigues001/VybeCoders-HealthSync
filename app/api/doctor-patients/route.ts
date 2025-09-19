@@ -12,11 +12,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get all doctor-patient connections for this doctor
-    const connectionsQuery = query(
-      collection(db, "doctorPatientConnections"),
-      where("doctorId", "==", doctorId),
-      where("status", "==", "approved"),
-    )
+    const connectionsQuery = query(collection(db, "patientDoctors"), where("doctorId", "==", doctorId))
 
     const connectionsSnapshot = await getDocs(connectionsQuery)
     const patientIds = connectionsSnapshot.docs.map((doc) => doc.data().patientId)
@@ -34,16 +30,23 @@ export async function GET(request: NextRequest) {
       ...doc.data(),
     }))
 
-    // Get prescription counts for each patient
     const patientsWithData = await Promise.all(
       patients.map(async (patient) => {
-        const prescriptionsQuery = query(collection(db, "prescriptions"), where("userId", "==", patient.uid))
-        const prescriptionsSnapshot = await getDocs(prescriptionsQuery)
+        const prescriptionsQuery1 = query(collection(db, "prescriptions"), where("patientId", "==", patient.uid))
+        const prescriptionsQuery2 = query(collection(db, "prescriptions"), where("userId", "==", patient.uid))
+
+        const [prescriptionsSnapshot1, prescriptionsSnapshot2] = await Promise.all([
+          getDocs(prescriptionsQuery1),
+          getDocs(prescriptionsQuery2),
+        ])
+
+        const totalPrescriptions = prescriptionsSnapshot1.size + prescriptionsSnapshot2.size
+        const allDocs = [...prescriptionsSnapshot1.docs, ...prescriptionsSnapshot2.docs]
 
         return {
           ...patient,
-          prescriptionCount: prescriptionsSnapshot.size,
-          lastVisit: prescriptionsSnapshot.docs.length > 0 ? prescriptionsSnapshot.docs[0].data().createdAt : null,
+          prescriptionCount: totalPrescriptions,
+          lastVisit: allDocs.length > 0 ? allDocs[0].data().createdAt : null,
         }
       }),
     )
