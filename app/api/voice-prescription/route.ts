@@ -120,13 +120,18 @@ Analyze the transcript carefully and extract structured medical information with
     };
 
     // Store in database (assuming you have a prescriptions collection)
-    const storeResponse = await fetch(`/api/prescriptions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(prescriptionData),
-    });
+    const storeResponse = await fetch(
+      `${
+        process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+      }/api/prescriptions`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(prescriptionData),
+      }
+    );
 
     if (!storeResponse.ok) {
       console.error("Failed to store prescription in database");
