@@ -1,7 +1,7 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { generateObject } from "ai"
-import { google } from "@ai-sdk/google"
-import { z } from "zod"
+import { type NextRequest, NextResponse } from "next/server";
+import { generateObject } from "ai";
+import { google } from "@ai-sdk/google";
+import { z } from "zod";
 
 const prescriptionSchema = z.object({
   doctorInfo: z.object({
@@ -21,18 +21,24 @@ const prescriptionSchema = z.object({
     .array(
       z.object({
         symptom: z.string().describe("Symptom description"),
-        severity: z.enum(["mild", "moderate", "severe"]).describe("Symptom severity level"),
+        severity: z
+          .enum(["mild", "moderate", "severe"])
+          .describe("Symptom severity level"),
         duration: z.string().describe("How long the symptom has been present"),
-      }),
+      })
     )
     .describe("List of symptoms mentioned in prescription"),
   diagnoses: z
     .array(
       z.object({
         diagnosis: z.string().describe("Medical diagnosis"),
-        confidence: z.number().min(0).max(100).describe("Confidence level in diagnosis (0-100)"),
+        confidence: z
+          .number()
+          .min(0)
+          .max(100)
+          .describe("Confidence level in diagnosis (0-100)"),
         icd10: z.string().describe("ICD-10 code if applicable"),
-      }),
+      })
     )
     .describe("Medical diagnoses from prescription"),
   medications: z
@@ -40,45 +46,54 @@ const prescriptionSchema = z.object({
       z.object({
         name: z.string().describe("Medication name (corrected if misspelled)"),
         dosage: z.string().describe("Dosage amount and strength"),
-        frequency: z.string().describe("How often to take (e.g., twice daily, every 8 hours)"),
+        frequency: z
+          .string()
+          .describe("How often to take (e.g., twice daily, every 8 hours)"),
         duration: z.string().describe("How long to take the medication"),
-        instructions: z.string().describe("Special instructions for taking the medication"),
-      }),
+        instructions: z
+          .string()
+          .describe("Special instructions for taking the medication"),
+      })
     )
     .describe("Prescribed medications with details"),
-})
+});
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("[v0] Starting image prescription processing")
+    console.log("[v0] Starting image prescription processing");
 
-    const formData = await request.formData()
-    const image = formData.get("image") as File
+    const formData = await request.formData();
+    const image = formData.get("image") as File;
 
     if (!image) {
-      console.log("[v0] No image provided in request")
-      return NextResponse.json({ error: "No image provided" }, { status: 400 })
+      console.log("[v0] No image provided in request");
+      return NextResponse.json({ error: "No image provided" }, { status: 400 });
     }
 
-    console.log("[v0] Image received:", image.name, image.size, "bytes")
+    console.log("[v0] Image received:", image.name, image.size, "bytes");
 
     if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-      console.error("[v0] Missing GOOGLE_GENERATIVE_AI_API_KEY environment variable")
+      console.error(
+        "[v0] Missing GOOGLE_GENERATIVE_AI_API_KEY environment variable"
+      );
       return NextResponse.json(
         {
           error:
             "Google AI integration not configured. Please add GOOGLE_GENERATIVE_AI_API_KEY to your environment variables.",
         },
-        { status: 500 },
-      )
+        { status: 500 }
+      );
     }
 
     // Convert image to base64
-    const bytes = await image.arrayBuffer()
-    const base64 = Buffer.from(bytes).toString("base64")
-    const mimeType = image.type
+    const bytes = await image.arrayBuffer();
+    const base64 = Buffer.from(bytes).toString("base64");
+    const mimeType = image.type;
 
-    console.log("[v0] Processing prescription image with Gemini Flash, image type:", mimeType)
+    console.log(
+      "[v0] Processing prescription image with Gemini Flash, image type:",
+      mimeType
+    );
 
     const { object } = await generateObject({
       model: google("gemini-1.5-flash"),
@@ -98,6 +113,7 @@ CRITICAL INSTRUCTIONS:
    - "ciprofloxacn" → "Ciprofloxacin"
    - "metformn" → "Metformin"
    - Always use the correct generic or brand name
+   - also symbols like 1-1-1 is for 3 time a day, 1-1 is for twice a day, 0-1-0 is for once a day
 
 2. **Doctor Information**: Extract doctor name, clinic/hospital name, phone number, and medical license number if visible
 
@@ -130,13 +146,13 @@ Please analyze this prescription image thoroughly and extract all available info
       ],
       schema: prescriptionSchema,
       temperature: 0.1, // Low temperature for consistent medical terminology
-    })
+    });
 
-    console.log("[v0] Successfully processed prescription image")
+    console.log("[v0] Successfully processed prescription image");
 
-    return NextResponse.json(object)
+    return NextResponse.json(object);
   } catch (error) {
-    console.error("[v0] Error processing prescription image:", error)
+    console.error("[v0] Error processing prescription image:", error);
 
     if (error instanceof Error) {
       if (error.message.includes("API key")) {
@@ -145,10 +161,13 @@ Please analyze this prescription image thoroughly and extract all available info
             error:
               "Google AI API key is invalid or missing. Please check your GOOGLE_GENERATIVE_AI_API_KEY environment variable.",
           },
-          { status: 500 },
-        )
+          { status: 500 }
+        );
       }
-      if (error.message.includes("quota") || error.message.includes("exceeded")) {
+      if (
+        error.message.includes("quota") ||
+        error.message.includes("exceeded")
+      ) {
         return NextResponse.json(
           {
             error:
@@ -156,24 +175,26 @@ Please analyze this prescription image thoroughly and extract all available info
             details:
               "Free tier limits: 15 requests per minute, 1,500 requests per day. Consider upgrading for production use.",
           },
-          { status: 429 },
-        )
+          { status: 429 }
+        );
       }
       if (error.message.includes("RESOURCE_EXHAUSTED")) {
         return NextResponse.json(
           {
-            error: "API resources temporarily exhausted. Please try again in a few minutes.",
+            error:
+              "API resources temporarily exhausted. Please try again in a few minutes.",
           },
-          { status: 429 },
-        )
+          { status: 429 }
+        );
       }
     }
 
     return NextResponse.json(
       {
-        error: "Failed to process prescription image. Please try again or check if the image is clear and readable.",
+        error:
+          "Failed to process prescription image. Please try again or check if the image is clear and readable.",
       },
-      { status: 500 },
-    )
+      { status: 500 }
+    );
   }
 }
