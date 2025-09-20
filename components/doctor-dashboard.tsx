@@ -14,9 +14,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Heart, Users, FileText, Activity, Settings, LogOut, Bell, Search, TrendingUp, Stethoscope } from "lucide-react"
-import { Input } from "@/components/ui/input"
+import PatientDetailView from "@/components/patient-detail-view"
 import { ProfileEdit } from "@/components/profile-edit"
-import { PatientDetailView } from "@/components/patient-detail-view"
 
 export function DoctorDashboard() {
   const { userProfile, logout, user } = useAuth()
@@ -85,9 +84,7 @@ export function DoctorDashboard() {
             </div>
 
             <div className="ml-auto flex items-center space-x-4">
-              <Button variant="outline" size="icon">
-                <Bell className="h-4 w-4" />
-              </Button>
+
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -140,19 +137,7 @@ export function DoctorDashboard() {
           </div>
 
           <div className="ml-auto flex items-center space-x-4">
-            <div className="relative">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search patients..."
-                className="pl-8 w-64"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
 
-            <Button variant="outline" size="icon">
-              <Bell className="h-4 w-4" />
-            </Button>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

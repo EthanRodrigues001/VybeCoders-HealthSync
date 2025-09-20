@@ -129,9 +129,7 @@ export function PatientDashboard() {
           </div>
 
           <div className="ml-auto flex items-center space-x-4">
-            <Button variant="outline" size="icon">
-              <Bell className="h-4 w-4" />
-            </Button>
+
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -181,30 +179,6 @@ export function PatientDashboard() {
             >
               <FileText className="mr-2 h-4 w-4" />
               Medical Records
-            </Button>
-            <Button
-              variant={activeTab === "appointments" ? "default" : "ghost"}
-              className="w-full justify-start"
-              onClick={() => setActiveTab("appointments")}
-            >
-              <Calendar className="mr-2 h-4 w-4" />
-              Appointments
-            </Button>
-            <Button
-              variant={activeTab === "medications" ? "default" : "ghost"}
-              className="w-full justify-start"
-              onClick={() => setActiveTab("medications")}
-            >
-              <Heart className="mr-2 h-4 w-4" />
-              Medications
-            </Button>
-            <Button
-              variant={activeTab === "upload" ? "default" : "ghost"}
-              className="w-full justify-start"
-              onClick={() => setActiveTab("upload")}
-            >
-              <Upload className="mr-2 h-4 w-4" />
-              Upload Documents
             </Button>
             <Button
               variant={activeTab === "doctors" ? "default" : "ghost"}
@@ -399,6 +373,18 @@ export function PatientDashboard() {
                 <p className="text-muted-foreground">All your uploaded prescription records</p>
               </div>
 
+              <Card>
+                <CardHeader>
+                  <CardTitle>Upload New Prescription</CardTitle>
+                  <CardDescription>
+                    Upload prescription images to extract and digitize the information using AI
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <OCRUpload onUploadComplete={fetchPrescriptions} />
+                </CardContent>
+              </Card>
+
               <div className="grid gap-4">
                 {loading ? (
                   <p className="text-center text-muted-foreground">Loading...</p>
@@ -424,7 +410,6 @@ export function PatientDashboard() {
                                     prescription.uploadedAt?.seconds * 1000 || prescription.createdAt,
                                   ).toLocaleDateString()}
                               </p>
-                              {/* Removed medications count display and show actual medication info */}
                               {getMedicationCount(prescription) > 0 && (
                                 <p className="text-sm text-muted-foreground">
                                   {getMedicationCount(prescription)} medication(s) prescribed
@@ -436,7 +421,14 @@ export function PatientDashboard() {
                             <Button variant="outline" size="sm" onClick={() => setSelectedPrescription(prescription)}>
                               View Details
                             </Button>
-                            {/* Added PDF download button */}
+                            {prescription.imageUrl && (
+                              <Button variant="outline" size="sm" asChild>
+                                <a href={prescription.imageUrl} download target="_blank" rel="noopener noreferrer">
+                                  <Download className="h-4 w-4 mr-1" />
+                                  Image
+                                </a>
+                              </Button>
+                            )}
                             <Button variant="outline" size="sm" onClick={() => handleDownloadPDF(prescription)}>
                               <Download className="h-4 w-4" />
                             </Button>
@@ -472,20 +464,7 @@ export function PatientDashboard() {
             </div>
           )}
 
-          {activeTab === "upload" && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-3xl font-bold tracking-tight">Upload Documents</h2>
-                  <p className="text-muted-foreground">Upload your medical documents to digitize and store them</p>
-                </div>
-              </div>
-
-              <OCRUpload onUploadComplete={fetchPrescriptions} />
-            </div>
-          )}
-
-          {activeTab !== "overview" && activeTab !== "upload" && activeTab !== "records" && activeTab !== "doctors" && (
+          {activeTab !== "overview" && activeTab !== "records" && activeTab !== "doctors" && (
             <div className="space-y-6">
               <div>
                 <h2 className="text-3xl font-bold tracking-tight capitalize">{activeTab}</h2>

@@ -1,18 +1,11 @@
-import { createUploadthing, type FileRouter } from "uploadthing/next";
+import {
+  generateUploadButton,
+  generateUploadDropzone,
+} from "@uploadthing/react";
 
-const f = createUploadthing();
+import type { OurFileRouter } from "@/app/api/uploadthing/core";
 
-export const ourFileRouter = {
-  medicalDocuments: f({ image: { maxFileSize: "8MB", maxFileCount: 5 } })
-    .middleware(async ({ req }) => {
-      // Add any auth checks here if needed
-      return { userId: "user" };
-    })
-    .onUploadComplete(async ({ metadata, file }) => {
-      console.log("Upload complete for userId:", metadata.userId);
-      console.log("file url", file.url);
-      return { uploadedBy: metadata.userId };
-    }),
-} satisfies FileRouter;
+export { ourFileRouter } from "@/app/api/uploadthing/core";
 
-export type OurFileRouter = typeof ourFileRouter;
+export const UploadButton = generateUploadButton<OurFileRouter>();
+export const UploadDropzone = generateUploadDropzone<OurFileRouter>();

@@ -41,24 +41,27 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const prescriptionData = await request.json()
+    console.log("[v0] Received prescription data:", prescriptionData)
 
-    if (!prescriptionData.patientId || !prescriptionData.doctorId) {
-      return NextResponse.json({ error: "Patient ID and Doctor ID are required" }, { status: 400 })
+    if (!prescriptionData.patientId) {
+      return NextResponse.json({ error: "Patient ID is required" }, { status: 400 })
     }
 
     // Structure the prescription data for storage
     const prescriptionToSave = {
       patientId: prescriptionData.patientId,
-      doctorId: prescriptionData.doctorId,
+      doctorId: prescriptionData.doctorId || "patient_upload",
       type: prescriptionData.type || "voice_prescription",
       status: prescriptionData.status || "approved",
+      imageUrl: prescriptionData.imageUrl || null, // Added image URL storage
+      prescriptionDate: prescriptionData.prescriptionDate || new Date().toISOString().split("T")[0],
       extractedData: {
         symptoms: prescriptionData.symptoms || [],
         diagnoses: prescriptionData.diagnoses || [],
         medications: prescriptionData.medications || [],
         doctorInfo: prescriptionData.doctorInfo || {},
         patientInfo: prescriptionData.patientInfo || {},
-        date: new Date().toISOString().split("T")[0], // Current date
+        date: prescriptionData.prescriptionDate || new Date().toISOString().split("T")[0],
         transcript: prescriptionData.transcript || "",
         processedAt: prescriptionData.processedAt || new Date().toISOString(),
       },
@@ -70,7 +73,9 @@ export async function POST(request: NextRequest) {
       },
     }
 
+    console.log("[v0] Saving prescription:", prescriptionToSave)
     const docRef = await addDoc(collection(db, "prescriptions"), prescriptionToSave)
+    console.log("[v0] Prescription saved with ID:", docRef.id)
 
     return NextResponse.json({
       success: true,
@@ -78,7 +83,7 @@ export async function POST(request: NextRequest) {
       prescription: prescriptionToSave,
     })
   } catch (error) {
-    console.error("Error saving prescription:", error)
+    console.error("[v0] Error saving prescription:", error)
     return NextResponse.json({ error: "Failed to save prescription" }, { status: 500 })
   }
 }

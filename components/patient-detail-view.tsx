@@ -174,29 +174,29 @@ export function PatientDetailView({ patient, doctorInfo, onBack }: PatientDetail
 
                           {(record.extractedData.medications?.length > 0 ||
                             record.extractedData.prescriptions?.length > 0) && (
-                              <div>
-                                <span className="font-medium">Medications:</span>
-                                <ul className="ml-4 mt-1">
-                                  {(record.extractedData.medications || record.extractedData.prescriptions || [])
-                                    .slice(0, 3)
-                                    .map((med: any, idx: number) => (
-                                      <li key={idx} className="text-xs">
-                                        {med.name || med.medication}{" "}
-                                        {(med.dose || med.dosage) && `- ${med.dose || med.dosage}`}
-                                      </li>
-                                    ))}
-                                  {(record.extractedData.medications || record.extractedData.prescriptions || []).length >
-                                    3 && (
-                                      <li className="text-xs text-muted-foreground">
-                                        +
-                                        {(record.extractedData.medications || record.extractedData.prescriptions || [])
-                                          .length - 3}{" "}
-                                        more...
-                                      </li>
-                                    )}
-                                </ul>
-                              </div>
-                            )}
+                            <div>
+                              <span className="font-medium">Medications:</span>
+                              <ul className="ml-4 mt-1">
+                                {(record.extractedData.medications || record.extractedData.prescriptions || [])
+                                  .slice(0, 3)
+                                  .map((med: any, idx: number) => (
+                                    <li key={idx} className="text-xs">
+                                      {med.name || med.medication}{" "}
+                                      {(med.dose || med.dosage) && `- ${med.dose || med.dosage}`}
+                                    </li>
+                                  ))}
+                                {(record.extractedData.medications || record.extractedData.prescriptions || []).length >
+                                  3 && (
+                                  <li className="text-xs text-muted-foreground">
+                                    +
+                                    {(record.extractedData.medications || record.extractedData.prescriptions || [])
+                                      .length - 3}{" "}
+                                    more...
+                                  </li>
+                                )}
+                              </ul>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
