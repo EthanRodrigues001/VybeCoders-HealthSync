@@ -1,6 +1,6 @@
-import { google } from "@ai-sdk/google"
-import { generateObject } from "ai"
-import { z } from "zod"
+import { google } from "@ai-sdk/google";
+import { generateObject } from "ai";
+import { z } from "zod";
 
 // Define the prescription schema based on the user's requirements
 const prescriptionSchema = z.object({
@@ -9,14 +9,14 @@ const prescriptionSchema = z.object({
       text: z.string(),
       severity: z.enum(["mild", "moderate", "severe"]),
       notes: z.string().optional(),
-    }),
+    })
   ),
   diagnoses: z.array(
     z.object({
       text: z.string(),
       icd10: z.string().nullable(),
       confidence: z.number().min(0).max(1),
-    }),
+    })
   ),
   medications: z.array(
     z.object({
@@ -25,20 +25,27 @@ const prescriptionSchema = z.object({
       timing: z.string(),
       duration_days: z.number(),
       instructions: z.string(),
-    }),
+    })
   ),
-})
+});
 
 export async function POST(req: Request) {
   try {
-    const { transcript, doctorInfo, patientInfo, patientId, doctorId } = await req.json()
+    const { transcript, doctorInfo, patientInfo, patientId, doctorId } =
+      await req.json();
 
     if (!transcript) {
-      return Response.json({ error: "Transcript is required" }, { status: 400 })
+      return Response.json(
+        { error: "Transcript is required" },
+        { status: 400 }
+      );
     }
 
     if (!patientId || !doctorId) {
-      return Response.json({ error: "Patient ID and Doctor ID are required" }, { status: 400 })
+      return Response.json(
+        { error: "Patient ID and Doctor ID are required" },
+        { status: 400 }
+      );
     }
 
     const prompt = `
@@ -86,7 +93,7 @@ Examples of corrections:
 - "sir dard" (Hindi) → "headache"
 
 Analyze the transcript carefully and extract structured medical information with high accuracy.
-`
+`;
 
     const { object } = await generateObject({
       model: google("gemini-1.5-flash"),
@@ -94,7 +101,7 @@ Analyze the transcript carefully and extract structured medical information with
       prompt,
       maxOutputTokens: 2000,
       temperature: 0.1, // Lower temperature for more consistent medical terminology
-    })
+    });
 
     const prescriptionData = {
       patientId,
@@ -110,38 +117,35 @@ Analyze the transcript carefully and extract structured medical information with
         processedAt: new Date().toISOString(),
       },
       createdAt: new Date().toISOString(),
-    }
+    };
 
     // Store in database (assuming you have a prescriptions collection)
-    const storeResponse = await fetch(
-      `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/prescriptions`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(prescriptionData),
+    const storeResponse = await fetch(`/api/prescriptions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
       },
-    )
+      body: JSON.stringify(prescriptionData),
+    });
 
     if (!storeResponse.ok) {
-      console.error("Failed to store prescription in database")
+      console.error("Failed to store prescription in database");
     }
 
     return Response.json({
       success: true,
       prescription: object,
       processedAt: new Date().toISOString(),
-    })
+    });
   } catch (error) {
-    console.error("Error processing prescription:", error)
+    console.error("Error processing prescription:", error);
 
     return Response.json(
       {
         error: "Failed to process prescription",
         details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 },
-    )
+      { status: 500 }
+    );
   }
 }
