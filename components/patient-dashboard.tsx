@@ -29,6 +29,9 @@ export function PatientDashboard() {
   const [prescriptions, setPrescriptions] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [hoveredCard, setHoveredCard] = useState<number | null>(null)
+  const [healthSummary, setHealthSummary] = useState<string>("")
+  const [summaryLoading, setSummaryLoading] = useState(false)
+  const [showSummary, setShowSummary] = useState(false)
 
   useEffect(() => {
     if (user?.uid) {
@@ -107,6 +110,32 @@ export function PatientDashboard() {
       console.error("Error generating PDF:", error)
     }
   }
+  const generateHealthSummary = async () => {
+    if (!user?.uid) return
+
+    setSummaryLoading(true)
+    try {
+      const response = await fetch("/api/health-summary", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userId: user.uid }),
+      })
+
+      const data = await response.json()
+      if (response.ok) {
+        setHealthSummary(data.summary)
+        setShowSummary(true)
+      } else {
+        console.error("Error generating summary:", data.error)
+      }
+    } catch (error) {
+      console.error("Error generating health summary:", error)
+    } finally {
+      setSummaryLoading(false)
+    }
+  }
 
   const healthStats = {
     totalRecords: prescriptions.length,
@@ -176,11 +205,10 @@ export function PatientDashboard() {
           <nav className="p-4 space-y-2">
             <Button
               variant={activeTab === "overview" ? "default" : "ghost"}
-              className={`w-full justify-start transition-all duration-300 hover:scale-102 ${
-                activeTab === "overview" 
-                  ? "bg-blue-600 text-white shadow-md" 
-                  : "hover:bg-blue-50 hover:text-blue-700"
-              }`}
+              className={`w-full justify-start transition-all duration-300 hover:scale-102 ${activeTab === "overview"
+                ? "bg-blue-600 text-white shadow-md"
+                : "hover:bg-blue-50 hover:text-blue-700"
+                }`}
               onClick={() => setActiveTab("overview")}
             >
               <Activity className="mr-2 h-4 w-4" />
@@ -188,11 +216,10 @@ export function PatientDashboard() {
             </Button>
             <Button
               variant={activeTab === "records" ? "default" : "ghost"}
-              className={`w-full justify-start transition-all duration-300 hover:scale-102 ${
-                activeTab === "records" 
-                  ? "bg-blue-600 text-white shadow-md" 
-                  : "hover:bg-blue-50 hover:text-blue-700"
-              }`}
+              className={`w-full justify-start transition-all duration-300 hover:scale-102 ${activeTab === "records"
+                ? "bg-blue-600 text-white shadow-md"
+                : "hover:bg-blue-50 hover:text-blue-700"
+                }`}
               onClick={() => setActiveTab("records")}
             >
               <FileText className="mr-2 h-4 w-4" />
@@ -200,11 +227,10 @@ export function PatientDashboard() {
             </Button>
             <Button
               variant={activeTab === "doctors" ? "default" : "ghost"}
-              className={`w-full justify-start transition-all duration-300 hover:scale-102 ${
-                activeTab === "doctors" 
-                  ? "bg-blue-600 text-white shadow-md" 
-                  : "hover:bg-blue-50 hover:text-blue-700"
-              }`}
+              className={`w-full justify-start transition-all duration-300 hover:scale-102 ${activeTab === "doctors"
+                ? "bg-blue-600 text-white shadow-md"
+                : "hover:bg-blue-50 hover:text-blue-700"
+                }`}
               onClick={() => setActiveTab("doctors")}
             >
               <Heart className="mr-2 h-4 w-4" />
@@ -226,42 +252,42 @@ export function PatientDashboard() {
 
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 {[
-                  { 
-                    title: "Total Records", 
-                    value: healthStats.totalRecords, 
-                    description: "Across all providers", 
-                    icon: FileText, 
+                  {
+                    title: "Total Records",
+                    value: healthStats.totalRecords,
+                    description: "Across all providers",
+                    icon: FileText,
                     color: "bg-blue-600",
                     bgColor: "hover:bg-blue-50"
                   },
-                  { 
-                    title: "Recent Uploads", 
-                    value: healthStats.recentUploads, 
-                    description: "This month", 
-                    icon: Upload, 
+                  {
+                    title: "Recent Uploads",
+                    value: healthStats.recentUploads,
+                    description: "This month",
+                    icon: Upload,
                     color: "bg-green-600",
                     bgColor: "hover:bg-green-50"
                   },
-                  { 
-                    title: "Upcoming Appointments", 
-                    value: healthStats.upcomingAppointments, 
-                    description: "Next 30 days", 
-                    icon: Calendar, 
+                  {
+                    title: "Upcoming Appointments",
+                    value: healthStats.upcomingAppointments,
+                    description: "Next 30 days",
+                    icon: Calendar,
                     color: "bg-purple-600",
                     bgColor: "hover:bg-purple-50"
                   },
-                  { 
-                    title: "Active Consultations", 
-                    value: healthStats.activeConsultations, 
-                    description: "Current providers", 
-                    icon: Heart, 
+                  {
+                    title: "Active Consultations",
+                    value: healthStats.activeConsultations,
+                    description: "Current providers",
+                    icon: Heart,
                     color: "bg-orange-600",
                     bgColor: "hover:bg-orange-50"
                   }
                 ].map((stat, index) => {
                   const IconComponent = stat.icon;
                   return (
-                    <Card 
+                    <Card
                       key={stat.title}
                       className={`relative overflow-hidden transition-all duration-500 hover:shadow-lg hover:scale-105 ${stat.bgColor} border-0 shadow-md bg-white`}
                       style={{ animationDelay: `${index * 100}ms` }}
@@ -452,6 +478,27 @@ export function PatientDashboard() {
                   <OCRUpload onUploadComplete={fetchPrescriptions} />
                 </CardContent>
               </Card>
+
+              {prescriptions.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Health Summary</CardTitle>
+                    <CardDescription>Get an AI-powered comprehensive summary of your medical data</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <Button onClick={generateHealthSummary} disabled={summaryLoading} className="w-full sm:w-auto">
+                      {summaryLoading ? "Generating Summary..." : "Summarize Medical Data"}
+                    </Button>
+
+                    {showSummary && healthSummary && (
+                      <div className="mt-4 p-4 bg-muted rounded-lg">
+                        <h4 className="font-semibold mb-2">Your Health Summary</h4>
+                        <div className="text-sm text-muted-foreground whitespace-pre-wrap">{healthSummary}</div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
 
               <div className="grid gap-4">
                 {loading ? (
