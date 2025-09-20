@@ -7,7 +7,11 @@ import { cn } from '@/lib/utils';
 // Logo Component
 const Logo = () => (
     <div className="flex items-center space-x-2">
-        <Heart className="h-8 w-8 text-primary" />
+        <img 
+    src="/image.png" 
+    alt="HealthSync Logo" 
+    className="h-8 w-8 object-contain" 
+/>
         <span className="text-2xl font-bold text-foreground">HealthSync</span>
     </div>
 );
@@ -195,7 +199,11 @@ const HealthSyncHero = ({ signInWithGoogle }: HealthSyncHeroProps) => {
                                         {/* Header */}
                                         <div className="flex items-center justify-between mb-6">
                                             <div className="flex items-center space-x-2">
-                                                <Heart className="h-6 w-6 text-red-500" />
+                                                <img 
+    src="/image.png" 
+    alt="HealthSync Logo" 
+    className="h-8 w-8 object-contain" 
+/>
                                                 <span className="font-semibold text-gray-900 dark:text-white">HealthSync Dashboard</span>
                                             </div>
                                             <div className="flex items-center space-x-2">

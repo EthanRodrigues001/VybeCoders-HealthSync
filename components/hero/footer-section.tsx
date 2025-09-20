@@ -11,7 +11,11 @@ const HealthSyncFooter = () => {
                     {/* Logo & Description */}
                     <div className="space-y-4">
                         <div className="flex items-center space-x-2">
-                            <Heart className="h-8 w-8 text-primary" />
+                            <img 
+    src="/image.png" 
+    alt="HealthSync Logo" 
+    className="h-8 w-8 object-contain" 
+/>
                             <span className="text-2xl font-bold text-foreground">HealthSync</span>
                         </div>
                         <div className="flex items-center space-x-2 text-xs text-muted-foreground">
